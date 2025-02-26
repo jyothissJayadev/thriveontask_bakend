@@ -7,7 +7,7 @@ import connectDb from "./database/conn.js";
 // Route imports
 import authRouter from "./routes/authrouter.js";
 import taskRouter from "./routes/router.js";
-
+import noteruoter from "./routes/noteRouter.js";
 // Error handler middleware
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import notFoundMiddleware from "./middleware/notFound.js";
@@ -26,7 +26,7 @@ app.disable("x-powered-by"); // Disable X-Powered-By header
 // API Routes
 app.use("/api/auth", authRouter); // Authentication routes
 app.use("/api/tasks", taskRouter); // Task routes
-
+app.use("/api/notes", noteruoter);
 // Error handling
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

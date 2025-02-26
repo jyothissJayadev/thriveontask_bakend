@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 const categorySchema = new mongoose.Schema({
   name: {
     type: String,
-    enum: ["days", "weeks", "months"],
     required: true,
   },
   parent_task: {
@@ -20,6 +19,11 @@ const categorySchema = new mongoose.Schema({
   color: {
     type: String,
     required: true, // Color to identify the category
+  },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // Reference to the User schema
+    required: true,
   },
 });
 

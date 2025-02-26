@@ -1,5 +1,4 @@
-import Task from "../model/TaskSchema.js"; // Make sure the path is correct
-
+import Task from "../model/TaskSchema.js";
 export const createTask = async (req, res, next) => {
   const { taskName, numberOfUnits, completedUnits, timeframe, duration } =
     req.body;
@@ -228,13 +227,23 @@ export const updateCompletedUnits = async (req, res) => {
     res.status(500).json({ success: false, message: "Error updating task" });
   }
 };
-
-// Delete a task
-export const deleteTask = async (req, res) => {
-  const { taskId } = req.params;
+export const updateTaskPriority = async (req, res) => {
+  const { taskId } = req.params; // Get the taskId from the URL
+  const { priority } = req.body; // Get the priority from the request body
 
   try {
-    const task = await Task.findOne({ taskId });
+    // Check if the priority is a valid number
+    if (typeof priority !== "number" || priority < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Priority must be a valid number and cannot be negative.",
+      });
+    }
+
+    // Find the task by taskId (using ObjectId for safe querying)
+    const task = await Task.findOne({
+      _id: new mongoose.Types.ObjectId(taskId),
+    });
 
     if (!task) {
       return res.status(404).json({
@@ -243,8 +252,41 @@ export const deleteTask = async (req, res) => {
       });
     }
 
-    // Delete the task
-    await task.remove();
+    // Update the task's priority
+    task.priority = priority;
+
+    // Update the updatedAt timestamp
+    task.updatedAt = Date.now();
+
+    // Save the updated task
+    await task.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Task priority updated successfully",
+      task,
+    });
+  } catch (error) {
+    console.error("Error updating task priority:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error updating task priority" });
+  }
+};
+// Delete a task
+export const deleteTask = async (req, res) => {
+  const { taskId } = req.params;
+
+  try {
+    // Use findByIdAndDelete for a more efficient delete operation
+    const task = await Task.findByIdAndDelete(taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found.",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -286,5 +328,64 @@ export const moveTask = async (req, res) => {
   } catch (error) {
     console.error("Error moving task:", error);
     res.status(500).json({ success: false, message: "Error moving task" });
+  }
+};
+export const updateStartAndEndTimes = async (req, res) => {
+  const { taskId } = req.params; // Extract taskId from URL parameters
+  const { startTime, endTime } = req.body; // Extract the new startTime and endTime from the request body
+
+  try {
+    // Validate the start and end times
+    if (!startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Both startTime and endTime are required.",
+      });
+    }
+
+    // Convert the startTime and endTime to Date objects
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    // Log the parsed start and end times to see if they are being parsed correctly
+    console.log("Parsed startTime:", start);
+    console.log("Parsed endTime:", end);
+
+    // Check if the startTime is later than endTime
+    if (start >= end) {
+      return res.status(400).json({
+        success: false,
+        message: "startTime must be earlier than endTime.",
+      });
+    }
+
+    // Find the task by taskId
+    const task = await Task.findById(taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found.",
+      });
+    }
+
+    // Update the task's startTime and endTime
+    task.createdAt = start;
+    task.endDate = end;
+    task.updatedAt = Date.now(); // Update the timestamp
+
+    // Save the updated task
+    await task.save();
+
+    // Return the updated task
+    res.status(200).json({
+      success: true,
+      task,
+    });
+  } catch (error) {
+    console.error("Error updating startTime and endTime:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error updating task times" });
   }
 };

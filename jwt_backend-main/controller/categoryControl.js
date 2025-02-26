@@ -1,7 +1,6 @@
 import Category from "../model/CategorySchema.js";
 import Task from "../model/TaskSchema.js"; // For referencing tasks
-
-// Create a new category with parent task, children, and color
+import mongoose from "mongoose";
 export const createCategory = async (req, res, next) => {
   const { name, description, parent_task, children, color } = req.body;
   const userId = req.user.userId;
@@ -15,7 +14,7 @@ export const createCategory = async (req, res, next) => {
       });
     }
 
-    // Check if the parent task exists
+    // Check if the parent task exists and belongs to the user
     const parentTask = await Task.findOne({ _id: parent_task, user: userId });
     if (!parentTask) {
       return res.status(404).json({
@@ -24,7 +23,17 @@ export const createCategory = async (req, res, next) => {
       });
     }
 
-    // Check if the children tasks exist
+    // Check if the parent task already exists in another category
+    const existingCategory = await Category.findOne({ parent_task });
+    if (existingCategory) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "This parent task is already assigned to an existing category.",
+      });
+    }
+
+    // Check if the children tasks exist and belong to the user
     const childrenTasks = await Task.find({
       _id: { $in: children },
       user: userId,
@@ -44,6 +53,7 @@ export const createCategory = async (req, res, next) => {
       parent_task,
       children,
       color,
+      user: userId, // Associate category with the user
     });
 
     // Save the category
@@ -59,24 +69,43 @@ export const createCategory = async (req, res, next) => {
   }
 };
 
-//getting all the data
 export const getCategories = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    const categories = await Category.find({}).populate("parent_task children");
+    // Fetch categories belonging to the user and populate the parent_task and children with task details
+    const categories = await Category.find({ user: userId }) // Ensure categories belong to the user
+      .populate({
+        path: "parent_task",
+        select: "taskName numberOfUnits completedUnits createdAt endDate", // Include the necessary task details
+      })
+      .populate({
+        path: "children",
+        select: "taskName numberOfUnits completedUnits createdAt endDate", // Include the necessary task details
+      });
 
+    // Check if categories are found
+    if (!categories.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No categories found for this user.",
+      });
+    }
+
+    // Return the populated categories
     res.status(200).json({
       success: true,
       categories,
     });
   } catch (error) {
     console.error("Error fetching categories:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error fetching categories" });
+    res.status(500).json({
+      success: false,
+      message: "Error fetching categories",
+    });
   }
 };
+
 // updatin the  color and children
 export const updateCategory = async (req, res) => {
   const { categoryId } = req.params;
@@ -84,13 +113,21 @@ export const updateCategory = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    // Find the category
+    // Find the category by ID
     const category = await Category.findById(categoryId);
 
     if (!category) {
       return res.status(404).json({
         success: false,
         message: "Category not found.",
+      });
+    }
+
+    // Ensure the category belongs to the user
+    if (category.user.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to update this category.",
       });
     }
 
@@ -107,7 +144,7 @@ export const updateCategory = async (req, res) => {
       });
     }
 
-    // Update color and children
+    // Update category's color and children
     category.color = color || category.color;
     category.children = children || category.children;
 
@@ -120,19 +157,27 @@ export const updateCategory = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating category:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error updating category" });
+    res.status(500).json({
+      success: false,
+      message: "Error updating category",
+    });
   }
 };
-// Delete the category
+
 export const deleteCategory = async (req, res) => {
   const { categoryId } = req.params;
 
   try {
-    // Find the category
-    const category = await Category.findById(categoryId);
+    // Validate categoryId
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category ID.",
+      });
+    }
 
+    // Find the category by ID
+    const category = await Category.findById(categoryId);
     if (!category) {
       return res.status(404).json({
         success: false,
@@ -140,19 +185,19 @@ export const deleteCategory = async (req, res) => {
       });
     }
 
-    // Optionally handle task deletion or reassignment for the parent task or children tasks
-
     // Delete the category
-    await category.remove();
+    await Category.findByIdAndDelete(categoryId);
 
+    // Send success response
     res.status(200).json({
       success: true,
-      message: "Category deleted successfully",
+      message: "Category deleted successfully.",
     });
   } catch (error) {
     console.error("Error deleting category:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error deleting category" });
+    res.status(500).json({
+      success: false,
+      message: "Error deleting category.",
+    });
   }
 };

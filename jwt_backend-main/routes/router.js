@@ -21,12 +21,16 @@ router.get(
   taskController.getTaskById
 );
 router.put("/tasks/:taskId", taskController.updateTask);
-router.delete("/tasks/:taskId", authorizeTaskAccess, taskController.deleteTask);
+router.delete("/tasks/:taskId", taskController.deleteTask);
 router.put("/tasks/:taskId/move", authorizeTaskAccess, taskController.moveTask);
 router.put(
   "/tasks/:taskId/completed-units",
   taskController.updateCompletedUnits
 );
+// Add this route in the router.js
+router.put("/tasks/:taskId/priority", taskController.updateTaskPriority);
+// Add this route in the router.js
+router.put("/tasks/:taskId/times", taskController.updateStartAndEndTimes);
 
 // Category Routes
 // Create a new category
