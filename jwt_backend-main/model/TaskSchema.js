@@ -45,13 +45,13 @@ const TaskSchema = new mongoose.Schema({
     default: Date.now,
   },
   category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Category",
+    type: mongoose.Schema.Types.Mixed, // Allows null or string
     required: false,
+    default: null,
   },
   priority: {
     type: Number,
-    default: 0,
+    default: 1,
   },
   color: {
     type: String,
@@ -60,6 +60,10 @@ const TaskSchema = new mongoose.Schema({
   duration: {
     type: Number, // Duration in hours (e.g., 2, 3, 4 hours)
     required: true,
+  },
+  lock: {
+    type: Number,
+    default: 0, // lock field with default value 0
   },
 });
 

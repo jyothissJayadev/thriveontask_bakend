@@ -115,8 +115,10 @@ export const getTaskById = async (req, res) => {
   const { taskId } = req.params;
 
   try {
-    const task = await Task.findOne({ taskId });
-
+    const task = await Task.findOne({
+      _id: new mongoose.Types.ObjectId(taskId),
+    });
+    console.log(taskId);
     if (!task) {
       return res.status(404).json({
         success: false,
@@ -215,6 +217,9 @@ export const updateCompletedUnits = async (req, res) => {
     // Update the updatedAt timestamp
     task.updatedAt = Date.now();
 
+    if (task.completedUnits === task.numberOfUnits) {
+      task.priority = 0;
+    }
     // Save the updated task
     await task.save();
 
@@ -304,7 +309,9 @@ export const moveTask = async (req, res) => {
   const { status, timeframe } = req.body;
 
   try {
-    const task = await Task.findOne({ taskId });
+    const task = await Task.findOne({
+      _id: new mongoose.Types.ObjectId(taskId),
+    });
 
     if (!task) {
       return res.status(404).json({

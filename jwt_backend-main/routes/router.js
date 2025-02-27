@@ -15,11 +15,7 @@ router.use(authenticateUser);
 router.post("/tasks", taskController.createTask);
 router.get("/tasks", taskController.getTasks);
 router.get("/tasks/:timeframe", taskController.getTasksByTimeframe);
-router.get(
-  "/tasks/id/:taskId",
-  authorizeTaskAccess,
-  taskController.getTaskById
-);
+router.get("/tasks/id/:taskId", taskController.getTaskById);
 router.put("/tasks/:taskId", taskController.updateTask);
 router.delete("/tasks/:taskId", taskController.deleteTask);
 router.put("/tasks/:taskId/move", authorizeTaskAccess, taskController.moveTask);
